@@ -158,11 +158,11 @@ This is an A-tier solver, its a good all-rounder that produces realistic-ish mot
 
 ### Algorithm:
 
-	  GetTheta : function = (effector_local_space : vec2, target_local_space : vec2, _default : float) ->
+	  GetTheta : function = (effector_local_space : vec2, target_local_space : vec2, _default : float) -> float
 	  {
 		length_effector := length(effector);
 		length_target 	:= length(target);
-		length 			:= length_effector*length_target;
+		length 		:= length_effector*length_target;
 
 		if(!length)
 			return _default;
@@ -282,7 +282,7 @@ So the method here is to alter the joint by a small amount, measure what happene
 
 ### Algorithm:
 
-	  vec3 originalEffectorPos = _0ToI[noNodes].translation;
+	  originalEffectorPos := _0ToI[noNodes].translation;
 
 	  for(i : 0..noJoints-1)
 	  {
@@ -310,7 +310,7 @@ The important thing to understand here is that :
 
 	vec3 = jacobian transpose * vec3
 
-This is unintuitive because the jacobian method adjusts each angle by the same amount as a result of the solver; so if elbows bend on the X axis all joints that can bend on the X axis will; which is kind of odd; it seems like we should get an array of values out of this, one for each joint, but we don't, we get a vec3, a value for each axis that will apply to all joints.
+This is unintuitive because the jacobian method adjusts each angle by the same amount as all others on the same axis. So if elbows and knees both bend on the X axis the solver will bend them by the same amount. Which is kind of odd; it seems like we should get an array of values out of this, one for each joint, but we don't, we get a vec3, a value for each axis that will apply to all joints.
 
 ### Algorithm:
 
