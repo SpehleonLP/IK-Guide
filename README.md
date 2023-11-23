@@ -6,7 +6,7 @@
 3. [Cyclic Coordinate Descent Solver](#3--cyclic-coordinate-descent-solver)
 4. [Jacobian Solver](#4--jacobian-solver)
 5. [Mass Spring Solver](#5--mass-spring-solver)
-6. [Scale Target Solver](#6-scale-target-solver)
+6. [Scale Target Solver](#6--scale-target-solver)
 
 # 0.  Terms
 
@@ -440,7 +440,7 @@ This is a really good candidate for optimization with SIMD; the compiler will no
 
 
 
-# 5.  Spring Mass Solver
+# 5.  Mass Spring Solver
 
 The spring mass solver will produce a bouncy effect thats good for hair physics and squash and stretch. Don't actually use hook's law to implement this, because the values of K that are stable depend on the value of deltaTime; meaning that inconsistent framerates can lead to blow up; and its not a nice linear function mapping max K to deltaTime that makes for easy clamping either.
 
