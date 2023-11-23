@@ -1,12 +1,12 @@
 # Inverse Kinematics Guide
 
-0. Terms
-1. Advice
-2. Fabrik Solver  (forwards and backwards reaching inverse kinematics)
-3. Cyclic Coordinate Descent solver
-4. Jacobian Solver
-5. Mass Spring Solver
-6. Scale Target Solver
+0. [Terms](#0--terms)
+1. [Advice](#1--advice)
+2. [Fabrik Solver](#2--fabrik-solver)  (forwards and backwards reaching inverse kinematics)
+3. [Cyclic Coordinate Descent Solver](#3--cyclic-coordinate-descent-solver)
+4. [Jacobian Solver](#4--jacobian-solver)
+5. [Mass Spring Solver](#5--mass-spring-solver)
+6. [Scale Target Solver](#6-scale-target-solver)
 
 # 0.  Terms
 
@@ -41,12 +41,12 @@
 
 # 2.  Fabrik Solver
 
-Overview:
+### Overview:
 
 The fabrik solver is fast, lightweight and easy for beginners. It excels at situations where there are many targets and many effectors, such as if a few effectors have many targets, or if there are effectors in the middle of the chain etc. It has issues with situations where there are rotation constraints; this is fairly doable in 2D environments, but in 3D the fact that fabrik has no concept of roll means that its not a good choice, and trying to get around that is more trouble than it's worth.
 
 
-Let:
+### Let:
 
 	// total joints, 0 is the root, N-1 is the effector, so the chain goes 0-1-2-3 etc.
 	  N : int;
@@ -67,7 +67,7 @@ Let:
 	  initial_rotations: quat[];
 	  initial_positions: vec3[];
 
-Algorithm:
+### Algorithm:
 
 	// store the position of the root we'll need it later!
 	  root := positions[0];
@@ -119,15 +119,16 @@ Algorithm:
 	  }
 
 
-# 3.  CCD solver
+# 3.  Cyclic Coordinate Descent Solver
 
-Overview:
+### Overview:
+
 The Cyclic Coordinate Descent solver is a solver based on considering each joint in the chain individually and solving it analitically.  Because it operates on arrays of angles and so does the jacobian solver; the output of this solver can be used as input to the jacobian solver and vice versa for refinement.
 
-This is an A-tier solver, its a good all-rounder that produces realistic-ish motion and is fast enough for real time.
+This is an A-tier solver, its a good all-rounder that produces realistic-ish motion and is fast enough for real time.  This was the solver used for foot placement in many games like Wind Waker!
 
 
-Let:
+### Let:
 
 	  struct transform { quat rotation; vec3 position; };
 
@@ -155,7 +156,7 @@ Let:
 	// accumulate this and return it, if its too high we need to iterate again
 	  lambda: float = 0;
 
-Algorithm:
+### Algorithm:
 
 	  GetTheta : function = (effector_local_space : vec2, target_local_space : vec2, _default : float) ->
 	  {
@@ -169,7 +170,7 @@ Algorithm:
 		{
 	// dot product is a cosine projection: a.x * b.x + a.y * b.y
 			cosine 	:= dot(effector, target) / length;
-	//	2d cross product is a sine projection: a.x * b.y - a.y * b.x
+	// 2d cross product is a sine projection: a.x * b.y - a.y * b.x
 			sine 	:= cross(effector, target) / length;
 
 			return atan2(sine, cosine);
@@ -219,15 +220,13 @@ The jacobian solver is extremely hard to get your head around because the langua
 		Z : float[];
 	};
 
-In a jacobian matrix each column corresponds to a value for an axis, maybe a delta, maybe a tangent, but a value. And the rows (indexes) correspond to joints (more on this later).  This is basically worthless for computaiton, you can't do anything useful with this data structure, its junk.  It's arranged like this because of the field of math it came from.
+In a jacobian matrix each column corresponds to a value for an axis, maybe a delta, maybe a tangent, but a value. And the rows (indexes) correspond to joints (more on this later).  This is basically worthless for computation, you can't do anything useful with this data structure, its junk.  It's arranged like this because of the field of math it came from.
 
 Next we have the jacobian transpose which is this:
 
 	JacobianTranspose : vec3[];
 
 Here the columns are the joints, and the rows are XYZ values; all I've done is turn it from an struct of arrays to an array of structs. Thats what taking a "transpose" means. So while the mathematical papers and algorithm descriptions talk about computing the jacobian and taking the transpose. You never do that, never ever do that: it is far easier to just compute the tranpose directly and work with it.
-
----
 
 The jacobian solver has basically 4 functions that need to be explained and defined they are as follows:
 
@@ -244,7 +243,7 @@ As before we consider the jacobian transpose matrix as an array of vec3 objects;
 So the method here is to alter the joint by a small amount, measure what happened and record it. When people say the jacobian is O(N^2) they mean that they need to recompute the armature arm to get how the end effector changed; fact is, you don't. you can just memoize cleverly.
 
 
-Let:
+### Let:
 
 	  struct transform { quat rotation; vec3 position; };
 
@@ -281,7 +280,7 @@ Let:
 	// output, this is the transpose
 	  output : vec3[];
 
-Algorithm:
+### Algorithm:
 
 	  vec3 originalEffectorPos = _0ToI[noNodes].translation;
 
@@ -313,7 +312,7 @@ The important thing to understand here is that :
 
 This is unintuitive because the jacobian method adjusts each angle by the same amount as a result of the solver; so if elbows bend on the X axis all joints that can bend on the X axis will; which is kind of odd; it seems like we should get an array of values out of this, one for each joint, but we don't, we get a vec3, a value for each axis that will apply to all joints.
 
-Algorithm:
+### Algorithm:
 
 	MulByTranspose(transpose : vec3[], vec3 input) -> vec3
 		vec3 result = vec3(0);
@@ -335,9 +334,7 @@ Each element is a sum of products, for example an element may represent a sum li
 
 This represents the cumulative effect of all joints on a particular axis of movement. This captures the interdependencies between the joints, and estimate how collective movements will affect the end effector.
 
-This is a really good candidate for optimization with SIMD; the compiler will not do this for you because the byte alignment of the input array is not correct. Check the documentation for your language on SIMD and __m128 registers to correctly write this method.  SIMD can be tricky though!
-
-Let:
+### Let:
 
 	// total joints
 	  N : int;
@@ -347,7 +344,7 @@ Let:
 	// axis for each joint, 0 = x, 1 = y, 2 = z
 	  axis : int[];
 
-Algorithm version 1:
+### Algorithm version 1:
 
 	result := mat3(0);
 
@@ -355,10 +352,10 @@ Algorithm version 1:
 		for(j : 0..N-1)
 			result[axis[i]] += D[i] * D[j];
 
-Algorithm version 2:
+### Algorithm version 2:
 
 	// notice that everything in result [axis[i]] was multiplied by D[i]
-	// so we can use the distributive property
+	// so we can use the distributive property: a*b + a*c = a * (b + c)
 	// (this is something we can do because its a transpose multiplication)
 	  result := mat3(0);
 	  accumulator := vec3(0);
@@ -369,10 +366,11 @@ Algorithm version 2:
 	  for(i : 0..N-1)
 		result[axis[i]] += D[i] * accumulator;
 
+This is a really good candidate for optimization with SIMD; the compiler will not do this for you because the byte alignment of the input array is not correct. Check the documentation for your language on SIMD and __m128 registers to correctly write this method.  SIMD can be tricky though!
 
 ## 4.d.  The jacobian solver
 
-Let:
+### Let:
 
 	// square of the lambda, this is used by the damped least squares method to better estimate the result
 	  lambda2 : float;
@@ -386,10 +384,10 @@ Let:
 	  min : float[]; // min angle of each joint
 	  max : float[]; // max angle of each joint
 
-Algorithm:
+### Algorithm:
 
 	  error := goal - _0ToI[noNodes].translation;
-	  ranspose := ComputeTranspose();
+	  transpose := ComputeTranspose();
 
 	// DLS jacobian solver (damped least squares)
 	// this is an optional step that improves solver quality
@@ -442,13 +440,11 @@ Algorithm:
 
 
 
-# 5.  Spring Mass Solver =
+# 5.  Spring Mass Solver
 
 The spring mass solver will produce a bouncy effect thats good for hair physics and squash and stretch. Don't actually use hook's law to implement this, because the values of K that are stable depend on the value of deltaTime; meaning that inconsistent framerates can lead to blow up; and its not a nice linear function mapping max K to deltaTime that makes for easy clamping either.
 
-Before using the spring mass solver
-
-Let:
+### Let:
 
 	// total joints, 0 is the root, N-1 is the effector, so the chain goes 0-1-2-3 etc.
 	  N : int;
@@ -463,8 +459,6 @@ Let:
 	  rotations: quat[];
 	// the length of each bone so length[i] = length(position[i+1] - positon[i])
 	  lengths : float[];
-	// the target we are reaching for; for multiple targets i would suggest using the average position, its easy and works well.
-	  goal: vec3;
 
 	// to compute the final rotations we always need the initial transform, regardless of path dependence
 	// if we use path dependent rotations then errors accumulate and the solver goes nuts.
@@ -472,8 +466,7 @@ Let:
 	  initial_rotations: quat[];
 	  initial_positions: vec3[];
 
-
-Algorithm:
+### Algorithm:
 
 	// start at 1 because we assume node 0 to be an anchor.
 	  for(i : 1..N-1)
@@ -524,7 +517,6 @@ Algorithm:
 		rotations[i] = rotations[i-1] * deltaRotation;
 	  }
 
-
 # 6.  Scale Target Solver
 
 The scale target solver is used to distribute scaling information from a goal into the armature.  A very simplified overview would be as follows:
@@ -541,7 +533,7 @@ The scale target solver is used to distribute scaling information from a goal in
 
 The unconstrained algorithm will work with negative scales, but the constrained one doesn't.
 
-Let:
+### Let:
 
 	// number of nodes
 	  N : int;
@@ -554,7 +546,7 @@ Let:
 	  minScale : vec3[];
 	  maxScale : vec3[];
 
-Algorithm:
+### Algorithm:
 
 	// solve with constraints
 	  if(minScale.size == maxScale.size || minScale.size == scales.size)
