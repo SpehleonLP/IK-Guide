@@ -1,14 +1,14 @@
 # Inverse Kinematics Guide
 
-0. [Terms](#0--terms)
-1. [Advice](#1--advice)
-2. [Fabrik Solver](#2--fabrik-solver)  (forwards and backwards reaching inverse kinematics)
-3. [Cyclic Coordinate Descent Solver](#3--cyclic-coordinate-descent-solver)
-4. [Jacobian Solver](#4--jacobian-solver)
-5. [Mass Spring Solver](#5--mass-spring-solver)
-6. [Scale Target Solver](#6--scale-target-solver)
+0. [Terms](#terms)
+1. [Advice](#advice)
+2. [Fabrik Solver](#fabrik-solver)  (forwards and backwards reaching inverse kinematics)
+3. [Cyclic Coordinate Descent Solver](#cyclic-coordinate-descent-solver)
+4. [Jacobian Solver](#jacobian-solver)
+5. [Mass Spring Solver](#mass-spring-solver)
+6. [Scale Target Solver](#scale-target-solver)
 
-# 0.  Terms
+# Terms
 
 - Effector: this is the part that tries to hit the goal, your hand is the effector that gets the soda bottle.
 - Nodes: the roots of the bones in the armature, make sure you have a node for the last tip too, such as by adding a leaf bone before exporting
@@ -21,7 +21,7 @@
 - colinear: when 3 points fall on a line they are colinear; when i say a joint is colinear i mean that the parent of the joint, the joint, and the immediate child of the joint are colinear; the joint is said to be colinear because changing it's angle is what will change this.
 - DFS a Depth First Search ordering is the ordering of nodes by exploring as far as possible before backtracking.
 
-# 1.  Advice
+# Advice
 
 - When using IK on an armature; always preprocess the armature so that the nodes are in strict DFS order; this has better caching behavior and ends up simplyifing the code and algorithms a lot more than you would think. I would also advise making the spine the first complete chain in the DFS ordering.
 
@@ -37,9 +37,7 @@
 
 - If you have scale targets solve them first instead of dealing with them at the same time as position/rotation constraints; as they are less inter-related.
 
-
-
-# 2.  Fabrik Solver
+# Fabrik Solver
 
 ### Overview:
 
@@ -105,6 +103,11 @@ The fabrik solver is fast, lightweight and easy for beginners. It excels at situ
 	  {
 	// get the vector of the default transform, we want this normalized so that we can compute rotations.
 	// remember the initial values are in local space not world space like the finals!!
+
+ 	// you absolutely need to compute the rotations in local space!!!
+  
+  	// it seems like you can get the delta in world space and apply it directly to 
+   	// the world space transform, but it won't work. quaternions are weird like that. 
 		initialVector := initial_positions[i] / lengths[i];
 		finalVector  := (positons[i] - positions[i-1]) / lengths[i];
 
@@ -119,7 +122,7 @@ The fabrik solver is fast, lightweight and easy for beginners. It excels at situ
 	  }
 
 
-# 3.  Cyclic Coordinate Descent Solver
+# Cyclic Coordinate Descent Solver
 
 ### Overview:
 
@@ -127,6 +130,9 @@ The Cyclic Coordinate Descent solver is a solver based on considering each joint
 
 This is an A-tier solver, its a good all-rounder that produces realistic-ish motion and is fast enough for real time.  This was the solver used for foot placement in many games like Wind Waker!
 
+A good way to envision it is to imagine a target your wirst to the tip of your index finger is the IK chain, you're pointing straight up and you want to reach a target directly in front of your wrist--such that you would do this by roating only your wirst.  The CCD solver will move each joint closer to the target, starting with the tip of the index finger pointing towards it, then the second knuckle curves towards it, so now your finger is in a tight loop, third knuckle to form a fist, and finally the wrist rotates down.
+
+At each stage the index finger tip *did* get closer to the target; but not in any way an animal would accomplish this.  When doing any kind of movement that is not just a slight adjustment the CCD solver will tend to do this thing of rolling up, then having to iterate several times to unroll itself again. 
 
 ### Let:
 
@@ -207,7 +213,7 @@ This is an A-tier solver, its a good all-rounder that produces realistic-ish mot
 	  }
 
 
-# 4.  Jacobian solver
+# Jacobian solver
 
 The jacobian algorithm is a C tier solver that is fairly slow but also produces movement that isn't very life-like.  Rather, it will move all bones in the chain equally to try to reach the target; which is not how animals move.
 
@@ -236,7 +242,7 @@ c. computing the jacobian times the jacobian tranpose (J * J^T)
 d. the solver itself.
 
 
-## 4.a.  Computing the Jacobian Transpose Matrix
+## a.  Computing the Jacobian Transpose Matrix
 
 As before we consider the jacobian transpose matrix as an array of vec3 objects; each vec3 describes how the end effector will move in response to changes at the current joint. If you've taken calculus before think of it as a secant, or a poor estimate of a tangent.
 
@@ -304,7 +310,7 @@ So the method here is to alter the joint by a small amount, measure what happene
 	  }
 
 
-## 4.b.  Multiplying a Vector By The Jacobian Transpose
+## b.  Multiplying a Vector By The Jacobian Transpose
 
 The important thing to understand here is that :
 
@@ -322,7 +328,7 @@ This is unintuitive because the jacobian method adjusts each angle by the same a
 
 		return result;
 
-## 4.c.  Computing The Jacobian Times The Jacobian Tranpose (J * J^T)
+## c.  Computing The Jacobian Times The Jacobian Tranpose (J * J^T)
 
 In most cases matrix multiplications cache really badly and are inherently O(N^2) but because we're multiplying a matrix by it's own transpose we can take some shortcuts.
 
@@ -368,7 +374,7 @@ This represents the cumulative effect of all joints on a particular axis of move
 
 This is a really good candidate for optimization with SIMD; the compiler will not do this for you because the byte alignment of the input array is not correct. Check the documentation for your language on SIMD and __m128 registers to correctly write this method.  SIMD can be tricky though!
 
-## 4.d.  The jacobian solver
+## d.  The jacobian solver
 
 ### Let:
 
@@ -440,7 +446,7 @@ This is a really good candidate for optimization with SIMD; the compiler will no
 
 
 
-# 5.  Mass Spring Solver
+# Mass Spring Solver
 
 The spring mass solver will produce a bouncy effect thats good for hair physics and squash and stretch. Don't actually use hook's law to implement this, because the values of K that are stable depend on the value of deltaTime; meaning that inconsistent framerates can lead to blow up; and its not a nice linear function mapping max K to deltaTime that makes for easy clamping either.
 
@@ -517,7 +523,7 @@ The spring mass solver will produce a bouncy effect thats good for hair physics 
 		rotations[i] = rotations[i-1] * deltaRotation;
 	  }
 
-# 6.  Scale Target Solver
+# Scale Target Solver
 
 The scale target solver is used to distribute scaling information from a goal into the armature.  A very simplified overview would be as follows:
 
