@@ -199,7 +199,8 @@ At each stage the index finger tip *did* get closer to the target; but not in an
 			if(axis == 0)
 				angles[node] = GetTheta(effector.yz, target.yz, angles[node*3+axis]);
 			if(axis == 1)
-				angles[node] = GetTheta(effector.xz, target.xz, angles[node*3+axis]);
+   	// this needs to be zx not xz; I honestly couldn't tell you why. 
+				angles[node] = GetTheta(effector.zx, target.zx, angles[node*3+axis]);
 			if(axis == 2)
 				angles[node] = GetTheta(effector.xy, target.xy, angles[node*3+axis]);
 
