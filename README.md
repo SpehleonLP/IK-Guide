@@ -556,7 +556,7 @@ The unconstrained algorithm will work with negative scales, but the constrained 
 ### Algorithm:
 
 	// solve with constraints
-	  if(minScale.size == maxScale.size || minScale.size == scales.size)
+	  if(minScale.size == maxScale.size && minScale.size == scales.size)
 	  {
 		amountToDistribute := pow(scaleGoal, 1.0 / max(N, 1));
 		remaining := scaleGoal;
