@@ -10,6 +10,7 @@
 
 # Terms
 
+- NOTE: all ranges are \[min, max\] inclusive; not the standard [min, max) exclusive.
 - Effector: this is the part that tries to hit the goal, your hand is the effector that gets the soda bottle.
 - Nodes: the roots of the bones in the armature, make sure you have a node for the last tip too, such as by adding a leaf bone before exporting
 - normalize: converting a vector to unit length so vec / length(vec)
@@ -183,7 +184,8 @@ At each stage the index finger tip *did* get closer to the target; but not in an
 		}
 	  }
 
-
+	  vec3 effectorPos := vec3(0);
+   
 	  for(node : N-1..0)
 	  {
 		for(axis : 0..2)
@@ -192,25 +194,24 @@ At each stage the index finger tip *did* get closer to the target; but not in an
 	// so the target local space needs to consider all joints preceeding this one
 			target := inverse(_0ToI[node] * getJoint(i, angles, 0, axis-1)) * goal;
 	// and the effector local space needs to consider all joints after this one!
-			effector = getJoint(node, angles, axis+1, 2) * _iToN[node].positition;
+			effector = getJoint(node, angles, axis+1, 2) * effectorPos;
 
 	// for each axis get the theta by projecting onto the 2D plane;
 	// this can be done just by swizzling because we're already in local space.
 			if(axis == 0)
-				angles[node] = GetTheta(effector.yz, target.yz, angles[node*3+axis]);
+				angles[node] = GetTheta(effector.yz, target.yz, angles[node*3 + 0]);
 			if(axis == 1)
-   	// this needs to be zx not xz; I honestly couldn't tell you why. 
-				angles[node] = GetTheta(effector.zx, target.zx, angles[node*3+axis]);
+				angles[node] = GetTheta(effector.zx, target.zx, angles[node*3 + 1]);
 			if(axis == 2)
-				angles[node] = GetTheta(effector.xy, target.xy, angles[node*3+axis]);
+				angles[node] = GetTheta(effector.xy, target.xy, angles[node*3 + 2]);
 
 	// if you need to apply min/max constraints do it here
 	// also make sure that angles[node] isn't a value that can cause gimble lock or become colinear
 	// if this happens add a small value to it.
 		}
 
-	// update our memo with the new orientation
-		_0ToI[node+1] = _0ToI[node] * getJoint(node, angles, 0, 2) * localSpace[node+1];
+	// update effector position
+		effectorPos = localSpace[node] * (getJoint(node, angles, 0, 2) * effectorPos);
 	  }
 
 
@@ -237,10 +238,10 @@ Here the columns are the joints, and the rows are XYZ values; all I've done is t
 
 The jacobian solver has basically 4 functions that need to be explained and defined they are as follows:
 
-a. computing the jacobian transpose matrix
-b. multiplying a vector by the jacobian transpose
-c. computing the jacobian times the jacobian tranpose (J * J^T)
-d. the solver itself.
+- a. computing the jacobian transpose matrix
+- b. multiplying a vector by the jacobian transpose
+- c. computing the jacobian times the jacobian tranpose (J * J^T)
+- d. the solver itself.
 
 
 ## a.  Computing the Jacobian Transpose Matrix
