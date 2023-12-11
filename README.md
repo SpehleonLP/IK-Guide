@@ -38,6 +38,8 @@
 
 - If you have scale targets solve them first instead of dealing with them at the same time as position/rotation constraints; as they are less inter-related.
 
+- If you need to animate a model with full body IK; [i made an animation program just for this purpose!](https://spehleon.gumroad.com/l/ylxsd)
+
 # Fabrik Solver
 
 ### Overview:
