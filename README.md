@@ -318,17 +318,17 @@ So the method here is to alter the joint by a small amount, measure what happene
 
 The important thing to understand here is that :
 
-	vec3 = jacobian transpose * vec3
+	float[] = jacobian transpose * vec3
 
-This is unintuitive because the jacobian method adjusts each angle by the same amount as all others on the same axis. So if elbows and knees both bend on the X axis the solver will bend them by the same amount. Which is kind of odd; it seems like we should get an array of values out of this, one for each joint, but we don't, we get a vec3, a value for each axis that will apply to all joints.
+ one value for each joint.
 
 ### Algorithm:
 
-	MulByTranspose(transpose : vec3[], vec3 input) -> vec3
-		vec3 result = vec3(0);
+	MulByTranspose(transpose : vec3[], vec3 input) -> float[]
+ 		float[] result{transpose.size, 0};
 
-		for(item : transpose)
-			result += input * item;
+		for(i : 0..transpose.size-1)
+			result[i] = input * item;
 
 		return result;
 
@@ -446,7 +446,7 @@ This is a really good candidate for optimization with SIMD; the compiler will no
 	// have two hinge joints that bend in opposite directions on the same axis
 	// the jacobian solver will produce unnatural movements.
 	  for(i : 0..N-1)
-		angles[i] = clamp(angles[i] + adjustment[axis[i]], min[i], max[i]);
+		angles[i] = clamp(angles[i] + adjustment[i], min[i], max[i]);
 
 
 
