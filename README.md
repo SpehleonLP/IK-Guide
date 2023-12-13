@@ -334,7 +334,7 @@ The important thing to understand here is that :
 
 ## c.  Computing The Jacobian Times The Jacobian Tranpose (J * J^T)
 
-In most cases matrix multiplications cache really badly and are inherently O(N^2) but because we're multiplying a matrix by it's own transpose we can take some shortcuts.
+In most cases matrix multiplications cache really badly and are inherently O(N^2).
 
 Now the jacobian matrix has N rows and 3 columns; and the transpose has 3 rows and N columns; so when we multiply them we always get a 3x3 matrix.
 
@@ -351,32 +351,14 @@ This represents the cumulative effect of all joints on a particular axis of move
 	// jacobian transpose computed above
 	  D: vec3[];
 
-	// axis for each joint, 0 = x, 1 = y, 2 = z
-	  axis : int[];
-
-### Algorithm version 1:
+### Algorithm:
 
 	result := mat3(0);
 
-	for(i : 0..N-1)
-		for(j : 0..N-1)
-			result[axis[i]] += D[i] * D[j];
-
-### Algorithm version 2:
-
-	// notice that everything in result [axis[i]] was multiplied by D[i]
-	// so we can use the distributive property: a*b + a*c = a * (b + c)
-	// (this is something we can do because its a transpose multiplication)
-	  result := mat3(0);
-	  accumulator := vec3(0);
-
-	  for(i : 0..N-1)
-		accumulator += D[i];
-
-	  for(i : 0..N-1)
-		result[axis[i]] += D[i] * accumulator;
-
-This is a really good candidate for optimization with SIMD; the compiler will not do this for you because the byte alignment of the input array is not correct. Check the documentation for your language on SIMD and __m128 registers to correctly write this method.  SIMD can be tricky though!
+	for(x : 0..2)
+ 	   for(y : 0..2)
+   	      for(j : 0..N-1)
+	          result[x][y] += D[j][x] * D[j][y];
 
 ## d.  The jacobian solver
 
