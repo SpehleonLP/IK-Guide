@@ -419,14 +419,7 @@ This represents the cumulative effect of all joints on a particular axis of move
 	// mapping the distance from the effector to the goal into joint coordinate space.
 	  adjustment := MulByTranspose(error);
 
-	// the adjustment of say adjustment.x applies to all joints that rotate
-	// along the X axis this is why the jacobian method leads to unnaturalistic
-	// movements; a real animal will say move it's elbow to grab a bean, not
-	// move its shoulder, elbow, wrist, and spine equally to grab the bean.
-
-	// this also means that if we have a situation like a dog leg; where we
-	// have two hinge joints that bend in opposite directions on the same axis
-	// the jacobian solver will produce unnatural movements.
+	// finally apply the adjustment and clamp to the joint limits.
 	  for(i : 0..N-1)
 		angles[i] = clamp(angles[i] + adjustment[i], min[i], max[i]);
 
