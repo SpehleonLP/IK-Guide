@@ -12,7 +12,7 @@ A solver for computing the per-bone volume of a non-manifold mesh for procedural
 
 ## Terms
 
-- **Volume Function**: A linear function `ax + by + cz + d` that gives the volume when evaluated at any 3D point
+- **Volume Function**: A linear function `ax + by + cz + d` that gives the volume when evaluated at any 3D point, for a manifold mesh a,b, and c will all be 0. 
 - **Manifold Mesh**: Best understood through non-manifold topology: such as the eye holes in a character model, or the way that the teeth are missing faces inside gums, or that sleeves are just double sided faces, all of these are NOT manifold. Manifold means it has no holes, all the surfaces are closed, there's no one sided surfaces, and a bunch of other constraints. In practice: almost no meshes are manifold.
 - **Subtree Volume**: The total volume of a bone plus all its children
 - **Tetrahedron Volume**: Volume between a triangle and an origin point, inherently linear in the origin position
