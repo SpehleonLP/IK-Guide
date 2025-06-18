@@ -41,7 +41,8 @@ This solver tackles a fundamental problem: how do you fairly distribute mesh vol
 - Requires skinned meshes with bone weights
 - Assumes linear volume distribution (which is mathematically correct for tetrahedra)
 - As written the algorithm assumes nodes are in strict DFS order.
-
+- The per-vertex weights of each bone must sum to 1 or the sum of the volume functions is not equivalent to the volume function of the entire mesh. 
+ 
 ---
 
 ## Volume Function Computation
