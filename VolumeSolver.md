@@ -157,15 +157,15 @@ for(boneIndex = 0; boneIndex < numBones; boneIndex++)
         // Absorb up to the bone's own magnitude, no more
         maxCanAbsorb = min(abs(boneCoeff), abs(errorAmount));
         errorCorrections[boneIndex][axis] = maxCanAbsorb * sign(errorAmount);
-        
-        // Recalculate constant term: d = -dot(origin, [a,b,c])
-        // The way to think about this, is imagine we extrude all the non-manifold parts of the mesh,
-        // and join to a single vertex, that we place where the root of the bone affecting these vertices is. 
-        // as in the prior example of the sleeve: the elbow becomes the root.
-        // so the non-manifold issues have been contained in a reasonable way.
-        errorCorrections[boneIndex].w = -dot(boneOrigins[boneIndex], errorCorrections[boneIndex].xyz);
     }
-    
+
+    // Recalculate constant term: d = -dot(origin, [a,b,c])
+    // The way to think about this, is imagine we extrude all the non-manifold parts of the mesh,
+    // and join to a single vertex, that we place where the root of the bone affecting these vertices is. 
+    // as in the prior example of the sleeve: the elbow becomes the root.
+    // so the non-manifold issues have been contained in a reasonable way.
+    errorCorrections[boneIndex].w = -dot(boneOrigins[boneIndex], errorCorrections[boneIndex].xyz);
+
     // Calculate what error is left over after this bone absorbed what it could
     leftoverError = errorToHandle - errorCorrections[boneIndex];
     
