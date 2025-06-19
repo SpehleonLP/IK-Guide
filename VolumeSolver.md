@@ -12,7 +12,7 @@ A solver for computing the per-bone volume of a non-manifold mesh for procedural
 
 ## Terms
 
-- **Volume Function**: A linear function `ax + by + cz + d` that gives the volume when evaluated at any 3D point, for a manifold mesh a,b, and c will all be 0. 
+- **Volume Function**: A linear function `ax + by + cz + d` that gives the volume when evaluated at any 3D point, for a manifold mesh a,b, and c will all be 0.     
 - **Manifold Mesh**: Best understood through non-manifold topology: such as the eye holes in a character model, or the way that the teeth are missing faces inside gums, or that sleeves are just double sided faces, all of these are NOT manifold. Manifold means it has no holes, all the surfaces are closed, there's no one sided surfaces, and a bunch of other constraints. In practice: almost no meshes are manifold.
 - **Subtree Volume**: The total volume of a bone plus all its children
 - **Tetrahedron Volume**: Volume between a triangle and an origin point, inherently linear in the origin position
@@ -52,62 +52,40 @@ First, we compute a linear volume function for each bone. The math here is: tetr
 ```
 GetVectorsPerBone(mesh) -> vec4[]
 {
-    // Get the 8 corners of the mesh bounding box
-    corners[8] = {
-        {min.x, min.y, min.z}, {min.x, min.y, max.z}, 
-        {min.x, max.y, min.z}, {min.x, max.y, max.z},
-        {max.x, min.y, min.z}, {max.x, min.y, max.z}, 
-        {max.x, max.y, min.z}, {max.x, max.y, max.z}
-    };
-    
-    // Storage for volume functions - one per bone
+    GetVolumeFunction = (tri) -> vec4
+    {
+        return {
+// how volume changes as we move origin of measurement
+                  tri.normal() * tri.area() / 3,
+// signed volume when measured at {0, 0, 0}
+                  dot(tri.vertex[0], cross(tri.vertex[1], tri.vertex[2])) / 6.0
+        };
+    }
+
+// Storage for volume functions - one per bone
     volumeFunctions : vec4[numBones];
-    volumeAccumulators : double[numBones][8];  // 8 values per bone, one per corner
     
-    // Process each triangle in the mesh
+// Process each triangle in the mesh
     for(triangle in mesh.triangles)
     {
-        // Calculate tetrahedron volume from triangle to origin point
-        calculateVolume(origin) -> double
-        {
-            // Form vectors from origin to triangle vertices
-            vectorAB = triangle.vertex[0] - origin;
-            vectorAC = triangle.vertex[1] - origin;  
-            vectorAD = triangle.vertex[2] - origin;
-            
-            // Signed volume = scalar triple product / 6
-            return dot(vectorAB, cross(vectorAC, vectorAD)) / 6.0;
-        }
-        
-        // Find which bones influence this triangle and by how much
+        vec4 this_volumeFunction = GetVolumeFunction(VolumeFunction);
+
+// remove degenerate tris!
+        if(isnan(this_volumeFunction.x)) continue;
+
+// Find which bones influence this triangle and by how much
         for(bone in triangle.influencingBones)
         {
-            // Get skinning weights for this triangle's vertices on this bone
+// Get skinning weights for this triangle's vertices on this bone
             weights = getSkinningWeights(triangle, bone);
             avgWeight = (weights.x + weights.y + weights.z) / 3.0;
-            
-            // Accumulate weighted volume contributions for each bounding box corner
-            for(cornerIndex = 0; cornerIndex < 8; cornerIndex++)
-            {
-                volume = calculateVolume(corners[cornerIndex]);
-                volumeAccumulators[bone][cornerIndex] += avgWeight * volume;
-            }
+
+            volumeFunctions[bone] += this_volumeFunction * avgWeight;
         }
-    }
-    
-    // For each bone, solve the linear system to get volume function coefficients
-    for(bone = 0; bone < numBones; bone++)
-    {
-        // We now have 8 equations: ax + by + cz + d = volume for each corner
-        // Solve for coefficients [a, b, c, d] using least squares
-        // x = (A^T * A)^(-1) * A^T * b
-        // I just used eigen for this
-        volumeFunctions[bone] = solveLeastSquares(corners, volumeAccumulators[bone]);
     }
     
     return volumeFunctions;
 }
-
 
 ```
 
