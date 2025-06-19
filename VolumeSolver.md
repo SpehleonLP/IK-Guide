@@ -110,7 +110,7 @@ for(boneIndex = numBones-1; boneIndex >= 0; boneIndex--)  // leaves to root
 }
 
 // STEP 2: Initialize error correction - root spatial coefficients should be {0,0,0}
-errorCorrections : vec4[numBones] = {0};
+errorCorrections : vec3[numBones] = {0};
 rootError = subtreeFunctions[0].xyz;  // Extract just the spatial coefficients [a,b,c]
 errorCorrections[0] = vec4(rootError, 0);  // Initialize root with spatial error, d=0
 
@@ -136,13 +136,6 @@ for(boneIndex = 0; boneIndex < numBones; boneIndex++)
         maxCanAbsorb = min(abs(boneCoeff), abs(errorAmount));
         errorCorrections[boneIndex][axis] = maxCanAbsorb * sign(errorAmount);
     }
-
-    // Recalculate constant term: d = -dot(origin, [a,b,c])
-    // The way to think about this, is imagine we extrude all the non-manifold parts of the mesh,
-    // and join to a single vertex, that we place where the root of the bone affecting these vertices is. 
-    // as in the prior example of the sleeve: the elbow becomes the root.
-    // so the non-manifold issues have been contained in a reasonable way.
-    errorCorrections[boneIndex].w = -dot(boneOrigins[boneIndex], errorCorrections[boneIndex].xyz);
 
     // Calculate what error is left over after this bone absorbed what it could
     leftoverError = errorToHandle - errorCorrections[boneIndex];
@@ -209,9 +202,18 @@ correctedVolumeFunctions = originalVolumeFunctions.copy();
 for(boneIndex = numBones-1; boneIndex >= 0; boneIndex--)  // traverse from leaves to root
 {
     parentIndex = parents[boneIndex];
-    
-    // Apply the spatial error correction we computed earlier
-    correctedVolumeFunctions[boneIndex] -= backpropCorrection[boneIndex];
+
+    // Recalculate constant term: d = -dot(origin, [a,b,c])
+    // The way to think about this, is imagine we extrude all the non-manifold parts of the mesh,
+    // and join to a single vertex, that we place where the root of the bone affecting these vertices is. 
+    // as in the prior example of the sleeve: the elbow becomes the root.
+    // so the non-manifold issues have been contained in a reasonable way.
+
+    backpropCorrection : vec4;
+    backpropCorrection.xyz = -errorCorrections; 
+    backpropCorrection.w   = dot(boneOrigins[boneIndex], errorCorrections[boneIndex]);
+
+    correctedVolumeFunctions[boneIndex] += backpropCorrection;
     
     // Add this bone's corrected function to its parent (building subtree totals)
     if(parentIndex >= 0)
