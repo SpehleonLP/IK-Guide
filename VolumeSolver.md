@@ -29,7 +29,6 @@ This solver tackles a fundamental problem: how do you fairly distribute mesh vol
 
 **What makes this good**:
 - **Fast**: O(triangles + bones), no iterations needed
-- **Exact**: R² = 1.0 (within floating point), not an approximation  
 - **Reusable**: Same error correction works for volume, center of mass, moments of inertia
 - **Robust**: Handles non-manifold meshes gracefully via error redistribution,
 
