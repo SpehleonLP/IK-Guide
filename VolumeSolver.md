@@ -88,10 +88,6 @@ GetVectorsPerBone(mesh) -> vec4[]
 
 ```
 
-The `GetVolumeVector` function solves an exact 8x4 linear system using QR decomposition. This isn't least-squares - it's an exact solution because the volume relationship is genuinely linear.
-
-**Why 8 corners?** We need enough constraints to uniquely determine the 4 coefficients, and the bounding box corners give us a well-distributed set of points that spans the mesh space nicely.
-
 ---
 
 ## Hierarchical Error Correction
