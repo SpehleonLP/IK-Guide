@@ -1,4 +1,4 @@
-# Bone Volume Solver: Linear Volume Distribution for Skeletal Meshes
+# Rintintin Solver: Linear Volume Distribution for Skeletal Meshes
 
 A solver for computing the per-bone volume of a non-manifold mesh for procedural animation use cases. 
 
